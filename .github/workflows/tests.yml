@@ -1,0 +1,9 @@
+name: Info
+run-name: ${{ github.actor }} is running
+on: [push]
+jobs:
+  Explore-GitHub-Actions:
+    runs-on: ubuntu-latest
+    steps:
+      - run: ./mvnw test
+      - run: echo "test ran Successfully"
