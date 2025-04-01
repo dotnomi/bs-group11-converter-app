@@ -1,0 +1,33 @@
+{
+  "order": {
+    "orderType": "createRequest",
+    "orderTime": "2025-04-01T14:30:15.123Z",
+    "notes": "Customer is a new subscriber.",
+    "orderId": "TO-20250401143015-000001",
+    "customerId": 67890,
+    "cashAccountId": 13579,
+    "transactions": {
+      "transaction": [
+        {
+          "amount": 75,
+          "fees": 1.75,
+          "description": "New service subscription",
+          "currency": "GBP"
+        },
+        {
+          "amount": 20,
+          "fees": 0.5,
+          "description": "Additional service fee",
+          "currency": "GBP"
+        },
+        {
+          "amount": 10,
+          "fees": 0.25,
+          "description": "Optional add-on",
+          "currency": "EUR"
+        }
+      ]
+    },
+    "cashAccountCurrency": "GBP"
+  }
+}
