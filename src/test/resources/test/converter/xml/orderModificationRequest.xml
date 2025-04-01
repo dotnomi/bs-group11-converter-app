@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<order>
+    <orderType>modifyRequest</orderType>
+    <orderId>TO-20250401143015-000001</orderId>
+    <cashAccountId>13579</cashAccountId>
+    <cashAccountCurrency>EUR</cashAccountCurrency>
+    <orderTime>2025-04-01T14:45:30.456Z</orderTime>
+    <transactions>
+        <transaction>
+            <amount>110.00</amount>
+            <currency>EUR</currency>
+            <fees>3.00</fees>
+            <description>Updated service subscription</description>
+        </transaction>
+        <transaction>
+            <amount>15.00</amount>
+            <currency>EUR</currency>
+            <fees>0.30</fees>
+            <description>Discount applied</description>
+        </transaction>
+    </transactions>
+    <notes>Customer updated their subscription details and received a discount.</notes>
+</order>
