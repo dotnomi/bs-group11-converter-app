@@ -1,0 +1,26 @@
+{
+  "order": {
+    "orderType": "modifyRequest",
+    "orderTime": "2025-04-01T14:45:30.456Z",
+    "notes": "Customer updated their subscription details and received a discount.",
+    "orderId": "TO-20250401143015-000001",
+    "cashAccountId": 13579,
+    "transactions": {
+      "transaction": [
+        {
+          "amount": 110,
+          "fees": 3,
+          "description": "Updated service subscription",
+          "currency": "EUR"
+        },
+        {
+          "amount": 15,
+          "fees": 0.3,
+          "description": "Discount applied",
+          "currency": "EUR"
+        }
+      ]
+    },
+    "cashAccountCurrency": "EUR"
+  }
+}

@@ -1,5 +1,10 @@
 package com.safedo.converter.converter
 
-interface Converter<F, T> {
-    fun convert(value: F): T
+abstract class Converter {
+    open fun convert(input: String): String {
+        return toString(toObject(input))
+    }
+
+    abstract fun toObject(input: String): Any
+    abstract fun toString(output: Any): String
 }
