@@ -9,11 +9,11 @@ RUN apk --no-cache add curl=8.10.1-r0
 COPY target/*.jar /app/midas.jar
 
 # Expose ports
-EXPOSE 80
+EXPOSE 8080
 
 # Healthcheck
 HEALTHCHECK --interval=5m --timeout=3s \
-    CMD ["curl", "-f", "http://localhost:80/q/health/live"]
+    CMD ["curl", "-f", "http://localhost:8080/q/health/live"]
 
 # Add a user and switch to it
 RUN adduser -D srv_user
