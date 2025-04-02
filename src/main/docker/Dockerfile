@@ -6,7 +6,7 @@ WORKDIR /app
 RUN apk --no-cache add curl=8.10.1-r0
 
 # Copy the backend JAR file
-COPY target/*.jar /app/midas.jar
+COPY /target/*.jar /app/midas.jar
 
 # Expose ports
 EXPOSE 8080
