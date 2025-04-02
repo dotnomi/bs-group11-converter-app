@@ -5,6 +5,8 @@ WORKDIR /app
 # Install curl
 RUN apk --no-cache add curl=8.12.1-r1
 
+RUN ls
+
 # Copy the backend JAR file
 COPY target/*.jar /app/midas.jar
 
