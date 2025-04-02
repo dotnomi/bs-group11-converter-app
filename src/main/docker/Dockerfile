@@ -3,7 +3,7 @@ FROM eclipse-temurin:17-jdk-alpine
 WORKDIR /app
 
 # Install curl
-RUN apk --no-cache add curl=8.10.1-r0
+RUN apk --no-cache add curl=8.12.1-r1
 
 # Copy the backend JAR file
 COPY /target/*.jar /app/midas.jar
