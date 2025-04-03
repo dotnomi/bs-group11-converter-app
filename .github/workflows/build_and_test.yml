@@ -110,7 +110,6 @@ jobs:
       - name: Cleanup Old Staging Images
         if: endsWith(env.DOCKER_IMAGE_NAME, 'staging')
         run: |
-          cd
           ls
           chmod +x cleanup_docker_images.sh
           ./cleanup_docker_images.sh ${{ github.repository_owner }} midas-staging ${{ secrets.DOCKER_TOKEN }} 5
