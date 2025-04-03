@@ -9,12 +9,15 @@ on:
     branches:
       - main
 
+# Berechtigungen auf read-all setzen, um sicherzustellen, dass keine unnötigen Schreibrechte vorhanden sind.
+# Für den Docker-Push werden spezifische Secrets/Vars verwendet.
 permissions: read-all
 
 jobs:
   run_unit_tests:
     runs-on: ubuntu-latest
     env:
+      # Umgebungsvariable für den Runner Tool Cache (optional, kann Caching beeinflussen)
       RUNNER_TOOL_CACHE: /toolcache
 
     steps:
@@ -58,25 +61,32 @@ jobs:
           cache: 'maven'
 
       - name: Generate Docker Image Tag
+        # Generiert dynamisch den Docker-Tag und -Namen basierend auf dem Branch
         id: tag
         run: |
+          # Repository-Besitzer in Kleinbuchstaben umwandeln
           REPOSITORY_OWNER=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')
           
+          # Branch-Namen ermitteln (funktioniert für push und pull_request)
           BRANCH_NAME=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}
+          # Ungültige Zeichen im Branch-Namen für Docker-Tags ersetzen/entfernen
           BRANCH_NAME=${BRANCH_NAME/'/#'/-}
           BRANCH_NAME=${BRANCH_NAME//[^a-zA-Z0-9-]/}
           
+          # Logik zur Bestimmung von Tag, Image-Name und Paket-Registry
           if [ "$BRANCH_NAME" == "main" ]; then
-          DATE_TAG=$(date +'%Y.%m')
-          BUILD_NUMBER=$(echo $GITHUB_RUN_NUMBER)
-          DOCKER_IMAGE_TAG="${DATE_TAG}.${BUILD_NUMBER}"
-          DOCKER_IMAGE_NAME="ghcr.io/${REPOSITORY_OWNER}/midas-release"
-          PACKAGE_REGISTRY="midas-release"
+            # Für den main-Branch: Jahr.Monat.BuildNummer als Tag, Name endet auf -release
+            DATE_TAG=$(date +'%Y.%m')
+            BUILD_NUMBER=$(echo $GITHUB_RUN_NUMBER)
+            DOCKER_IMAGE_TAG="${DATE_TAG}.${BUILD_NUMBER}"
+            DOCKER_IMAGE_NAME="ghcr.io/${REPOSITORY_OWNER}/midas-release"
+            PACKAGE_REGISTRY="midas-release"
           else
-          BUILD_NUMBER=$(echo $GITHUB_RUN_NUMBER)
-          DOCKER_IMAGE_TAG="${BRANCH_NAME}.${BUILD_NUMBER}"
-          DOCKER_IMAGE_NAME="ghcr.io/${REPOSITORY_OWNER}/midas-staging"
-          PACKAGE_REGISTRY="midas-staging"
+            # Für andere Branches: BranchName.BuildNummer als Tag, Name endet auf -staging
+            BUILD_NUMBER=$(echo $GITHUB_RUN_NUMBER)
+            DOCKER_IMAGE_TAG="${BRANCH_NAME}.${BUILD_NUMBER}"
+            DOCKER_IMAGE_NAME="ghcr.io/${REPOSITORY_OWNER}/midas-staging"
+            PACKAGE_REGISTRY="midas-staging"
           fi
           
           echo "DOCKER_IMAGE_TAG=$DOCKER_IMAGE_TAG" >> $GITHUB_ENV
@@ -87,11 +97,14 @@ jobs:
         run: |
           chmod +x mvnw
           ./mvnw clean
+          # Setzt die Projektversion auf den generierten Docker-Tag
           ./mvnw versions:set -DnewVersion=${{ env.DOCKER_IMAGE_TAG }}
+          # Erstellt das Paket (uber-jar) und überspringt die Tests (wurden bereits ausgeführt)
           ./mvnw package -Dquarkus.package.jar.type=uber-jar -DskipTests
 
       - name: Build Docker image
         run: |
+          # Baut das Docker-Image lokal mit dem generierten Tag
           TAG=${{ env.DOCKER_IMAGE_TAG }}
           docker build -t midas:$TAG .
 
@@ -102,22 +115,58 @@ jobs:
           username: ${{ vars.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_TOKEN }}
 
-      - name: Push Docker image
+      - name: Tag and Push Docker image
+        # Taggt das lokale Image mit dem vollständigen Namen (inkl. Version) UND mit 'latest'
+        # und pusht beide Tags zur Registry.
         run: |
           DOCKER_IMAGE_TAG=${{ env.DOCKER_IMAGE_TAG }}
           DOCKER_IMAGE_NAME=${{ env.DOCKER_IMAGE_NAME }}
+          
+          # Taggen und Pushen des Versionstags
+          echo "Tagging image with version: $DOCKER_IMAGE_NAME:$DOCKER_IMAGE_TAG"
           docker tag midas:$DOCKER_IMAGE_TAG $DOCKER_IMAGE_NAME:$DOCKER_IMAGE_TAG
+          echo "Pushing $DOCKER_IMAGE_NAME:$DOCKER_IMAGE_TAG"
           docker push $DOCKER_IMAGE_NAME:$DOCKER_IMAGE_TAG
+          
+          # Taggen und Pushen des 'latest' Tags
+          echo "Tagging image with latest: $DOCKER_IMAGE_NAME:latest"
+          docker tag midas:$DOCKER_IMAGE_TAG $DOCKER_IMAGE_NAME:latest
+          echo "Pushing $DOCKER_IMAGE_NAME:latest"
+          docker push $DOCKER_IMAGE_NAME:latest
 
       - name: Cleanup Old Staging Images
+        # Bereinigt alte Staging-Images (nur wenn der Image-Name auf 'staging' endet)
         if: endsWith(env.DOCKER_IMAGE_NAME, 'staging')
         run: |
-          ls
-          chmod +x cleanup_docker_images.sh
-          ./cleanup_docker_images.sh ${{ github.repository_owner }} midas-staging ${{ secrets.DOCKER_TOKEN }} 5
+          echo "Running cleanup script for staging images..."
+          # Stellt sicher, dass das Skript existiert und ausführbar ist
+          if [ -f cleanup_docker_images.sh ]; then
+            chmod +x cleanup_docker_images.sh
+            # Führt das Cleanup-Skript aus
+            # Parameter: <owner> <repo> <token> <anzahl beizubehaltender images>
+            ./cleanup_docker_images.sh ${{ github.repository_owner }} midas-staging ${{ secrets.DOCKER_TOKEN }} 5
+          else
+            echo "Cleanup script 'cleanup_docker_images.sh' not found. Skipping cleanup."
+          fi
 
-      - name: Add Summary
+      - name: Add Build Summary
+        # Fügt eine Zusammenfassung zum GitHub Actions Summary hinzu
         run: |
-          sed -i "s/@PACKAGE_REGISTRY@/${{ env.PACKAGE_REGISTRY }}/g" build_summary.md
-          sed -i "s/@DOCKER_IMAGE_TAG@/${{ env.DOCKER_IMAGE_TAG }}/g" build_summary.md
-          cat build_summary.md >> $GITHUB_STEP_SUMMARY
+          echo "Generating build summary..."
+          # Stellt sicher, dass die Vorlagendatei existiert
+          if [ -f build_summary.md ]; then
+            # Ersetzt Platzhalter in der Markdown-Datei
+            sed -i "s/@PACKAGE_REGISTRY@/${{ env.PACKAGE_REGISTRY }}/g" build_summary.md
+            sed -i "s/@DOCKER_IMAGE_TAG@/${{ env.DOCKER_IMAGE_TAG }}/g" build_summary.md
+            # Fügt den Inhalt der Datei zur Job-Zusammenfassung hinzu
+            cat build_summary.md >> $GITHUB_STEP_SUMMARY
+            echo "Build summary added."
+          else
+            echo "Template file 'build_summary.md' not found. Skipping summary."
+            # Optional: Eine Standardzusammenfassung hinzufügen
+            echo "## Build Summary" >> $GITHUB_STEP_SUMMARY
+            echo "- Package Registry: ${{ env.PACKAGE_REGISTRY }}" >> $GITHUB_STEP_SUMMARY
+            echo "- Docker Image Tag: ${{ env.DOCKER_IMAGE_TAG }}" >> $GITHUB_STEP_SUMMARY
+            echo "- Docker Image Name: ${{ env.DOCKER_IMAGE_NAME }}" >> $GITHUB_STEP_SUMMARY
+            echo "- Pushed Tags: ${{ env.DOCKER_IMAGE_TAG }}, latest" >> $GITHUB_STEP_SUMMARY
+          fi
