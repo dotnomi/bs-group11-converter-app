@@ -69,7 +69,7 @@ jobs:
             
             echo "Logging into GitHub Container Registry..."
             # Login bei der GitHub Container Registry (ghcr.io)
-            echo "${{ secrets.GH_PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            echo "${{ secrets.DOCKER_TOKEN }}" | docker login ghcr.io -u ${{ vars.DOCKER_USERNAME }} --password-stdin
             
             echo "Pulling the image: $IMAGE_NAME"
             # Lädt das Docker-Image herunter
