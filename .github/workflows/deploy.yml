@@ -1,0 +1,93 @@
+name: Midas Deployment Pipeline
+
+on:
+  workflow_dispatch:
+    inputs:
+      package_name:
+        description: 'Welches Paket soll deployed werden?'
+        required: true
+        type: choice
+        options:
+          - midas-release
+          - midas-staging
+        default: 'midas-release'
+      image_tag:
+        description: 'Welcher Image-Tag soll verwendet werden? (Standard: latest)'
+        required: false
+        type: string
+        default: 'latest'
+  registry_package:
+    types: [ published ]
+
+jobs:
+  deploy_to_remote:
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      (
+        github.event_name == 'registry_package' &&
+        github.event.registry_package.name == 'midas-release' &&
+        github.event.registry_package.package_type == 'container'
+      )
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy to Server via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DEPLOY_SERVER_IP }}
+          username: ${{ secrets.DEPLOY_SERVER_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          password: ${{ secrets.DEPLOY_SERVER_PASSWORD }}
+
+          script: |
+            set -e # Bricht das Skript sofort ab, wenn ein Befehl fehlschlägt
+            
+            # Bestimme Paketnamen und Tag basierend auf dem Trigger
+            if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+              PACKAGE_NAME="${{ github.inputs.package_name }}"
+              IMAGE_TAG="${{ github.inputs.image_tag }}"
+              # Stelle sicher, dass der Tag nicht leer ist, falls optional und nicht angegeben
+              if [ -z "$IMAGE_TAG" ]; then
+                IMAGE_TAG="latest"
+              fi
+            else # registry_package event (wird nur für midas-release ausgelöst)
+              PACKAGE_NAME="midas-release"
+              # Verwende 'latest' für automatische Trigger (oder extrahiere den echten Tag)
+              # IMAGE_TAG="${{ github.event.package.package_version.version }}"
+              IMAGE_TAG="latest"
+            fi
+            
+            # Baue den vollständigen Image-Namen
+            IMAGE_NAME="ghcr.io/${{ github.repository }}/$PACKAGE_NAME:$IMAGE_TAG"
+            # Definiere einen dynamischen Container-Namen basierend auf dem Paket
+            CONTAINER_NAME="midas-app-$PACKAGE_NAME"
+            
+            echo "Trigger: ${{ github.event_name }}"
+            echo "Deploying Package: $PACKAGE_NAME, Tag: $IMAGE_TAG"
+            echo "Full Image Name: $IMAGE_NAME"
+            echo "Target Container Name: $CONTAINER_NAME"
+            
+            echo "Logging into GitHub Container Registry..."
+            # Login bei der GitHub Container Registry (ghcr.io)
+            echo "${{ secrets.GH_PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            
+            echo "Pulling the image: $IMAGE_NAME"
+            # Lädt das Docker-Image herunter
+            docker pull $IMAGE_NAME
+            
+            echo "Stopping existing container '$CONTAINER_NAME' (if running)..."
+            # Stoppt den alten Container für dieses Paket (release oder staging)
+            docker stop $CONTAINER_NAME || true
+            
+            echo "Removing existing container '$CONTAINER_NAME' (if exists)..."
+            # Entfernt den alten Container für dieses Paket
+            docker rm $CONTAINER_NAME || true
+            
+            echo "Starting new container: $CONTAINER_NAME from $IMAGE_NAME"
+            # Startet einen neuen Container mit dem heruntergeladenen Image.
+            docker run -p 8080:80 -d --restart always --name $CONTAINER_NAME $IMAGE_NAME
+            
+            echo "Deployment of $PACKAGE_NAME successful!"
+            
+            echo "Cleaning up unused Docker images..."
+            docker image prune -af
