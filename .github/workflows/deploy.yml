@@ -57,8 +57,10 @@ jobs:
               IMAGE_TAG="latest"
             fi
             
+            # Repository-Besitzer in Kleinbuchstaben umwandeln
+            REPOSITORY_OWNER=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')
             # Baue den vollständigen Image-Namen
-            IMAGE_NAME="ghcr.io/$PACKAGE_NAME:$IMAGE_TAG"
+            IMAGE_NAME="ghcr.io/$REPOSITORY_OWNER/$PACKAGE_NAME:$IMAGE_TAG"
             # Definiere einen dynamischen Container-Namen basierend auf dem Paket
             CONTAINER_NAME="midas-app-$PACKAGE_NAME"
             
