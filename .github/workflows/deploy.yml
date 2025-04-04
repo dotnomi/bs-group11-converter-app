@@ -69,25 +69,25 @@ jobs:
             
             echo "Logging into GitHub Container Registry..."
             # Login bei der GitHub Container Registry (ghcr.io)
-            echo "${{ secrets.DOCKER_TOKEN }}" | docker login ghcr.io -u ${{ vars.DOCKER_USERNAME }} --password-stdin
+            echo "${{ secrets.DOCKER_TOKEN }}" | podman login ghcr.io -u ${{ vars.DOCKER_USERNAME }} --password-stdin
             
             echo "Pulling the image: $IMAGE_NAME"
             # Lädt das Docker-Image herunter
-            docker pull $IMAGE_NAME
+            podman pull $IMAGE_NAME
             
             echo "Stopping existing container '$CONTAINER_NAME' (if running)..."
             # Stoppt den alten Container für dieses Paket (release oder staging)
-            docker stop $CONTAINER_NAME || true
+            podman stop $CONTAINER_NAME || true
             
             echo "Removing existing container '$CONTAINER_NAME' (if exists)..."
             # Entfernt den alten Container für dieses Paket
-            docker rm $CONTAINER_NAME || true
+            podman rm $CONTAINER_NAME || true
             
             echo "Starting new container: $CONTAINER_NAME from $IMAGE_NAME"
             # Startet einen neuen Container mit dem heruntergeladenen Image.
-            docker run -p 8080:80 -d --restart always --name $CONTAINER_NAME $IMAGE_NAME
+            podman run -p 8080:80 -d --restart always --name $CONTAINER_NAME $IMAGE_NAME
             
             echo "Deployment of $PACKAGE_NAME successful!"
             
             echo "Cleaning up unused Docker images..."
-            docker image prune -af
+            podman image prune -af
