@@ -58,7 +58,7 @@ jobs:
             fi
             
             # Baue den vollständigen Image-Namen
-            IMAGE_NAME="ghcr.io/${{ github.repository }}/$PACKAGE_NAME:$IMAGE_TAG"
+            IMAGE_NAME="ghcr.io/$PACKAGE_NAME:$IMAGE_TAG"
             # Definiere einen dynamischen Container-Namen basierend auf dem Paket
             CONTAINER_NAME="midas-app-$PACKAGE_NAME"
             
