@@ -16,18 +16,20 @@ on:
         required: false
         type: string
         default: 'latest'
-  registry_package:
-    types: [ published ]
+  workflow_run:
+    workflows: [ "Midas Build Pipeline" ]
+    types:
+      - completed
+    branches:
+      - main
 
 jobs:
   deploy_to_remote:
+    # Führe den Job aus bei manuellem Trigger ODER
+    # wenn der Build-Workflow auf 'main' erfolgreich abgeschlossen wurde.
     if: |
       github.event_name == 'workflow_dispatch' ||
-      (
-        github.event_name == 'registry_package' &&
-        github.event.registry_package.name == 'midas-release' &&
-        github.event.registry_package.package_type == 'container'
-      )
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
     runs-on: ubuntu-latest
 
     steps:
@@ -57,8 +59,10 @@ jobs:
               IMAGE_TAG="latest"
             fi
             
+            # Repository-Besitzer in Kleinbuchstaben umwandeln
+            REPOSITORY_OWNER=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')
             # Baue den vollständigen Image-Namen
-            IMAGE_NAME="ghcr.io/$PACKAGE_NAME:$IMAGE_TAG"
+            IMAGE_NAME="ghcr.io/$REPOSITORY_OWNER/$PACKAGE_NAME:$IMAGE_TAG"
             # Definiere einen dynamischen Container-Namen basierend auf dem Paket
             CONTAINER_NAME="midas-app-$PACKAGE_NAME"
             
