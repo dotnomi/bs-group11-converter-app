@@ -5,7 +5,7 @@ import org.json.JSONObject
 import org.json.XML
 
 @ApplicationScoped
-class XmlToJsonConverter: Converter() {
+class XmlToJsonConverter : Converter() {
     override fun toObject(input: String): Any {
         return XML.toJSONObject(input)
     }
