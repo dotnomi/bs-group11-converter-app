@@ -1,0 +1,75 @@
+# Configuration for detekt - https://detekt.dev/docs/configuration
+
+# Define custom rule sets (optional)
+# ruleSets:
+#   my-custom-rules:
+#     active: true
+#     rules:
+#       NamingConventionViolation:
+#         active: true
+#         parameterPattern: '[A-Za-z0-9_$]+' # Example: Allow underscores in parameter names
+
+# Configure default rule sets
+formatting:
+  active: true # Enable formatting rules (ktlint integration)
+
+style:
+  active: true
+  MaxLineLength:
+    maxLineLength: 120
+    excludeCommentStatements: true
+  WildcardImport:
+    active: true # Consider enabling this to enforce explicit imports
+  UnusedImports:
+    active: true
+  MagicNumber:
+    active: true
+    ignoreNumbers: ['-1', '0', '1', '2'] # Common constants
+  ReturnCount:
+    max: 3 # Limit the number of return statements in a function
+  ThrowsCount:
+    max: 3 # Limit the number of thrown exceptions in a function
+
+complexity:
+  active: true
+  LongMethod:
+    threshold: 50 # Maximum number of lines in a method
+  LongParameterList:
+    threshold: 5 # Maximum number of parameters in a function
+  ComplexMethod:
+    threshold: 10 # Cyclomatic complexity threshold
+
+performance:
+  active: true
+  UnnecessaryTemporaryVariable:
+    active: true
+
+potential-bugs:
+  active: true
+  EqualsWithHashCode:
+    active: true
+  UnsafeCast:
+    active: true
+  NullableBooleanCheck:
+    active: true
+
+comments:
+  active: true
+  CommentOverPrivateProperty:
+    active: false # Depending on your team's preferences
+
+# Exclude paths or files from analysis
+exclude:
+  - '**/build/**'
+  - '**/resources/**'
+  - '**/test/**'
+  - '**/*.generated.kt' # Exclude generated files
+
+# Configure output reports (optional)
+output:
+  plain:
+    active: true
+    outputFile: build/reports/detekt/detekt.txt
+  sarif:
+    active: true
+    outputFile: build/reports/detekt/detekt.sarif
