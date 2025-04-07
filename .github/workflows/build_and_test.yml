@@ -53,6 +53,21 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Run Super-Linter
+        uses: github/super-linter@v5
+        env:
+          VALIDATE_ALL_CODEBASE: true # Set to true to lint all files, otherwise only changed files
+          DEFAULT_BRANCH: main
+          GITHUB_TOKEN: ${{ secrets.DOCKER_TOKEN }}
+          # Enable linters for Kotlin and Dockerfile
+          VALIDATE_KOTLIN: true
+          VALIDATE_DOCKERFILE: true
+          # Optional: Specify the directories to lint
+          FILTER_REGEX_EXCLUDE: 'build/,target/' # Exclude build and target directories for Maven
+          FILE_PATH_DOCKERFILE: '.' # Specify the directory where your Dockerfile(s) are located
+          # Optional: Configure specific linters (example for Kotlin detekt)
+          KOTLIN_DETEKT_CONFIG_FILE: '.github/linters/detekt.yml'
+
       - name: Setup Java 21
         uses: actions/setup-java@v4
         with:
