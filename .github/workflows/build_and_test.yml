@@ -29,6 +29,7 @@ jobs:
       - name: Run Super-Linter
         uses: github/super-linter@v5
         env:
+          RUNNER_TOOL_CACHE: /toolcache
           VALIDATE_ALL_CODEBASE: true # Set to true to lint all files, otherwise only changed files
           DEFAULT_BRANCH: main
           GITHUB_TOKEN: ${{ secrets.DOCKER_TOKEN }}
